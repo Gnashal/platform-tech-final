@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.2";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
@@ -69,12 +69,16 @@ Deno.serve(async (req) => {
       }),
       { status: 200 },
     );
-  } catch (e) {
-    const errorMessage = e instanceof Error
-      ? e.message
-      : "An unknown error occurred";
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-    });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    return new Response(
+      JSON.stringify({ error: "An unknown error occurred" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
   }
 });

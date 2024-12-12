@@ -1,5 +1,8 @@
 {
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
   "devDependencies": {
-    "supabase": "^1.223.10"
+    "supabase": "^1.226.4"
   }
 }
