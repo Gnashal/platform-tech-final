@@ -13,26 +13,25 @@ Deno.serve(async (req) => {
       { status: 405, headers: { "Content-Type": "application/json" } },
     );
   }
-  const { course_name } = await req.json();
+  const { student_name, course_name } = await req.json();
+
   if (!course_name) {
     return new Response(JSON.stringify({ error: "Missing Fields" }), {
       status: 405,
     });
   }
   try {
-    const { data: { user }, error: sessionError } = await supabase.auth
-      .getUser();
-    if (!user || sessionError) {
-      return new Response(JSON.stringify(sessionError));
-    }
     const { data: studentData, error: studentError } = await supabase
       .from("students")
       .select("student_id")
-      .eq("student_name", user.user_metadata?.name)
+      .eq("student_name", student_name)
       .single();
+    console.log({ studentData, studentError });
 
     if (!studentData || studentError) {
-      return new Response(JSON.stringify(studentError));
+      return new Response(
+        JSON.stringify(studentError || { error: "Student not found" }),
+      );
     }
 
     const studentID = studentData.student_id;
@@ -42,12 +41,17 @@ Deno.serve(async (req) => {
       .select("course_id")
       .eq("course_name", course_name)
       .single();
+    console.log({ courseData, courseError });
+
     if (!courseData || courseError) {
-      return new Response(JSON.stringify(studentError));
+      return new Response(
+        JSON.stringify(courseError || { error: "Course not found" }),
+      );
     }
     const courseID = courseData.course_id;
 
-    const { data, error: enrollmentError } = await supabase.from("enrollemnts")
+    const { error: enrollmentError } = await supabase
+      .from("enrollments")
       .insert({
         student_id: studentID,
         course_id: courseID,
@@ -56,7 +60,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify(enrollmentError));
     }
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(
+        JSON.stringify({ message: `Welcome to the course ${course_name}` }),
+      ),
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (err: unknown) {
