@@ -11,13 +11,28 @@ if (!SEND_GRIND_API) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
     });
   }
 
-  const { email } = await req.json();
+  if (req.method === "GET") {
+    return new Response(
+      JSON.stringify({ message: "Send-email function is working" }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+
+  const { student_name, course_name, email } = await req.json();
 
   if (!email) {
     return new Response(
@@ -30,14 +45,25 @@ Deno.serve(async (req) => {
     personalizations: [
       {
         to: [{ email }],
-        subject: "Welcome Email",
+        subject: `Welcome to ${course_name}!`,
+        substitutions: {
+          "{{student_name}}": student_name,
+          "{{course_name}}": course_name,
+        },
       },
     ],
     from: { email: "yousifceballos@gmail.com" },
     content: [
       {
-        type: "text/plain",
-        value: "Welcome! Please to have you.",
+        type: "text/html",
+        value: `
+          <h1>Welcome, ${student_name}!</h1>
+          <p>We are thrilled to have you join <strong>${course_name}</strong>.</p>
+          <p>Feel free to reach out if you have any questions or need assistance.</p>
+          <br>
+          <p>Best regards,</p>
+          <p>The Course Team</p>
+        `,
       },
     ],
   };
