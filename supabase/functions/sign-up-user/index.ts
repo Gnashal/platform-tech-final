@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { email, password, role } = await req.json();
+  const { email, password, role, name } = await req.json();
 
   if (!email || !password || !role) {
     return new Response(JSON.stringify({ error: "Missing fields" }), {
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
     const { data: updatedData, error: updateError } = await supabase.auth
       .updateUser({
-        data: { role },
+        data: { role, name },
       });
 
     if (updateError) {
@@ -49,16 +49,26 @@ Deno.serve(async (req) => {
     }
 
     if (updatedData) {
-      const { error: insertError } = await supabase
+      const { data: userData, error: insertError } = await supabase
         .from("users")
         .insert({
           user_auth_id: updatedData.user.id,
           role: updatedData.user.user_metadata?.role,
           email: updatedData.user.email,
-        });
+          name: updatedData.user.user_metadata?.name,
+        }).select("*");
 
-      if (insertError) {
-        throw insertError;
+      if (insertError || !userData) {
+        throw new Error(JSON.stringify(insertError));
+      }
+      if (role == "student") {
+        const { error: studentInsertError } = await supabase.from("students")
+          .insert({
+            student_name: updatedData.user.user_metadata?.name,
+          });
+        if (studentInsertError) {
+          throw new Error(JSON.stringify(studentInsertError));
+        }
       }
     }
 

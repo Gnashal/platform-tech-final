@@ -22,14 +22,15 @@ Deno.serve(async (req) => {
     );
   }
   try {
-    const { error: logInError } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+    const { data: authData, error: logInError } = await supabase.auth
+      .signInWithPassword({
+        email: email,
+        password: password,
+      });
     if (logInError) {
       return new Response(JSON.stringify(logInError));
     }
-    return new Response(`Welcome ${email}`);
+    return new Response(`Welcome ${email}` + JSON.stringify(authData));
   } catch (e) {
     const errorMessage = e instanceof Error
       ? e.message
